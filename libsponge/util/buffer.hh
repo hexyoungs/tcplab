@@ -5,6 +5,7 @@
 #include <deque>
 #include <memory>
 #include <numeric>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <sys/uio.h>
