@@ -22,6 +22,7 @@ void get_URL(const string &host, const string &path) {
         string s = sock.read();
         cout << s;
     }
+    sock.close();
 }
 
 int main(int argc, char *argv[]) {
