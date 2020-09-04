@@ -57,7 +57,12 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 }
 
 size_t StreamReassembler::unassembled_bytes() const {
-    return _pos == 0 ? (_max_pos > 1 ? (_max_pos - 1) : 0) : (_max_pos - _pos);
+    size_t unassembled = 0;
+    for (auto &item : _chunks)
+        unassembled += item.data.length();
+    size_t unassembled_by_pos = _pos == 0 ? (_max_pos > 1 ? (_max_pos - 1) : 0) : (_max_pos - _pos);
+
+    return std::min(unassembled, unassembled_by_pos);
 }
 
 bool StreamReassembler::empty() const { return _pos == 0; }
