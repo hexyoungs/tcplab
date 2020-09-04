@@ -20,14 +20,26 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
                                     unwrap(seg.header().seqno, _isn.value(), stream_out().bytes_written()),
                                     seg.header().fin);
         return true;
-    } else if (_isn.has_value() && ackno().has_value() && seg.header().seqno - ackno().value() >= 0 &&
-               size_t(seg.header().seqno - ackno().value()) <= window_size()) {
-        string s = string(seg.payload().str());
-        uint64_t index = unwrap(seg.header().seqno - _offset, _isn.value(), stream_out().bytes_written());
-        cout << "s: " << s << endl;
-        cout << "index: " << index << endl;
-        _reassembler.push_substring(s, index, seg.header().fin);
-        return true;
+    } else if (_isn.has_value()) {
+        // check overlap
+        cout << "seg.header().seqno - ackno().value(): " << seg.header().seqno - ackno().value() << endl;
+        int overlap = seg.header().seqno - ackno().value() + int(seg.payload().size());
+        if (overlap >= 0 && (seg.header().seqno - ackno().value() < 0 ||
+                             size_t(seg.header().seqno - ackno().value()) < window_size())) {
+            if (overlap == 0 && !seg.header().fin) {
+                return false;
+            }
+            string s = string(seg.payload().str());
+            uint64_t index = unwrap(seg.header().seqno - _offset, _isn.value(), stream_out().bytes_written());
+            cout << "s: " << s << endl;
+            cout << "index: " << index << endl;
+            _reassembler.push_substring(s, index, seg.header().fin);
+            if (seg.header().fin) {
+                _offset = 2;
+            }
+            return true;
+        }
+        return false;
     }
     return false;
 }
