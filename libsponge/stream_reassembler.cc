@@ -25,25 +25,23 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         return;
     if (_max_pos < index + data.length())
         _max_pos = index + data.length();
+
     DataChunk chunk = DataChunk{data, index, eof};
     _chunks.push_back(chunk);
     push_heap(_chunks.begin(), _chunks.end(), DataChunkCmp());
 
     while (!_chunks.empty() && !_eof) {
         DataChunk c = _chunks.front();
-
         if (c.index < _pos) {
             // duplicated packet
             // or overlapped packet
             int extra = c.data.length() + c.index - _pos;
             if (extra > 0) {
                 // more data to write
-                _output.write(c.data.substr(c.data.length() - extra));
-                _pos += extra;
+                _pos += _output.write(c.data.substr(c.data.length() - extra));
             }
         } else if (c.index == _pos) {
-            _output.write(c.data);
-            _pos += c.data.length();
+            _pos += _output.write(c.data);
         } else {
             // should wait more
             break;
