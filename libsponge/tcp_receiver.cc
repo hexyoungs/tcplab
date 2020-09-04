@@ -10,11 +10,33 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
+#include <iostream>
+
 bool TCPReceiver::segment_received(const TCPSegment &seg) {
-    DUMMY_CODE(seg);
-    return {};
+    if (seg.header().syn && !_isn.has_value()) {
+        _offset = seg.header().fin ? 2 : 1;
+        _isn = optional<WrappingInt32>{seg.header().seqno};
+        _reassembler.push_substring(string(seg.payload().str()),
+                                    unwrap(seg.header().seqno, _isn.value(), stream_out().bytes_written()),
+                                    seg.header().fin);
+        return true;
+    } else if (_isn.has_value() && ackno().has_value() && seg.header().seqno - ackno().value() >= 0 &&
+               size_t(seg.header().seqno - ackno().value()) <= window_size()) {
+        string s = string(seg.payload().str());
+        uint64_t index = unwrap(seg.header().seqno - _offset, _isn.value(), stream_out().bytes_written());
+        cout << "s: " << s << endl;
+        cout << "index: " << index << endl;
+        _reassembler.push_substring(s, index, seg.header().fin);
+        return true;
+    }
+    return false;
 }
 
-optional<WrappingInt32> TCPReceiver::ackno() const { return {}; }
+optional<WrappingInt32> TCPReceiver::ackno() const {
+    if (!_isn.has_value())
+        return nullopt;
 
-size_t TCPReceiver::window_size() const { return {}; }
+    return optional<WrappingInt32>(wrap(stream_out().bytes_written() + _offset, _isn.value()));
+}
+
+size_t TCPReceiver::window_size() const { return stream_out().remaining_capacity(); }

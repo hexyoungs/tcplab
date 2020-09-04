@@ -58,6 +58,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }
 }
 
-size_t StreamReassembler::unassembled_bytes() const { return _pos == 0 ? (_max_pos - 1) : (_max_pos - _pos); }
+size_t StreamReassembler::unassembled_bytes() const {
+    return _pos == 0 ? (_max_pos > 1 ? (_max_pos - 1) : 0) : (_max_pos - _pos);
+}
 
 bool StreamReassembler::empty() const { return _pos == 0; }
