@@ -10,8 +10,6 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-#include <iostream>
-
 bool TCPReceiver::segment_received(const TCPSegment &seg) {
     if (seg.header().syn && !_isn.has_value()) {
         _offset = seg.header().fin ? 2 : 1;
@@ -22,7 +20,6 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
         return true;
     } else if (_isn.has_value()) {
         // check overlap
-        cout << "seg.header().seqno - ackno().value(): " << seg.header().seqno - ackno().value() << endl;
         int overlap = seg.header().seqno - ackno().value() + int(seg.payload().size());
         if (overlap >= 0 && (seg.header().seqno - ackno().value() < 0 ||
                              size_t(seg.header().seqno - ackno().value()) < window_size())) {
@@ -31,8 +28,6 @@ bool TCPReceiver::segment_received(const TCPSegment &seg) {
             }
             string s = string(seg.payload().str());
             uint64_t index = unwrap(seg.header().seqno - _offset, _isn.value(), stream_out().bytes_written());
-            cout << "s: " << s << endl;
-            cout << "index: " << index << endl;
             _reassembler.push_substring(s, index, seg.header().fin);
             if (seg.header().fin) {
                 _offset = 2;
